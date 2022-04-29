@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 """
     modelChecker v.0.1.1
     Reliable production ready sanity checker for Autodesk Maya
@@ -12,6 +13,7 @@ from functools import partial
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 import maya.api.OpenMaya as om
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import modelChecker.modelChecker_commands as mcc
 import modelChecker.modelChecker_list as mcl
 import sys
@@ -20,16 +22,16 @@ import sys
 def getMainWindow():
     main_window_ptr = omui.MQtUtil.mainWindow()
     if sys.version_info.major >= 3:
-        mainWindow = wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
+        mainWindow = wrapInstance(int(main_window_ptr), QtWidgets.QMainWindow)
     else:
-        mainWindow = wrapInstance(long(main_window_ptr), QtWidgets.QWidget)
+        mainWindow = wrapInstance(long(main_window_ptr), QtWidgets.QMainWindow)
     return mainWindow
 
 
-class UI(QtWidgets.QMainWindow):
+class UI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
     qmwInstance = None
-    version = '0.1.1'
+    version = '0.1.2'
     SLMesh = om.MSelectionList()
     commandsList = mcl.mcCommandsList
     reportOutputUI = QtWidgets.QTextEdit()
@@ -51,24 +53,31 @@ class UI(QtWidgets.QMainWindow):
         if not cls.qmwInstance:
             cls.qmwInstance = UI()
         if cls.qmwInstance.isHidden():
-            cls.qmwInstance.show()
+            cls.qmwInstance.show(dockable=True)
         else:
             cls.qmwInstance.raise_()
             cls.qmwInstance.activateWindow()
 
     def __init__(self, parent=getMainWindow()):
         super(UI, self).__init__(
-            parent, QtCore.Qt.WindowStaysOnTopHint)
-
+            parent)
+        
         self.setObjectName("ModelCheckerUI")
-        self.setWindowTitle('Model Checker' + ' ' + self.version)
+        self.setWindowTitle('模型检查工具' + ' ' + self.version)
+        
+        # scrollbase = QtWidgets.QVBoxLayout(self)
+        # scroll = QtWidgets.QScrollArea()
+        # scrollbase.addWidget(scroll)
+        # scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        # scroll.setWidgetResizable( True )
 
-        mainLayout = QtWidgets.QWidget(self)
-        self.setCentralWidget(mainLayout)
+        # mainWidget = QtWidgets.QWidget(self)
+        # scroll.setWidget(mainWidget)
 
-        columns = QtWidgets.QHBoxLayout(mainLayout)
+        columns = QtWidgets.QHBoxLayout(self)
         report = QtWidgets.QVBoxLayout()
         checks = QtWidgets.QVBoxLayout()
+        
 
         columns.addLayout(checks)
         columns.addLayout(report)
@@ -76,13 +85,13 @@ class UI(QtWidgets.QMainWindow):
         selectedModelVLayout = QtWidgets.QHBoxLayout()
         checks.addLayout(selectedModelVLayout)
 
-        selectedModelLabel = QtWidgets.QLabel("Top Node")
+        selectedModelLabel = QtWidgets.QLabel("顶级物体")
         selectedModelLabel.setMaximumWidth(60)
 
         self.selectedTopNode_UI = QtWidgets.QLineEdit("")
         self.selectedTopNode_UI.setMaximumWidth(200)
 
-        selectedModelNodeButton = QtWidgets.QPushButton("Select")
+        selectedModelNodeButton = QtWidgets.QPushButton("选择")
         selectedModelNodeButton.setMaximumWidth(60)
         selectedModelNodeButton.clicked.connect(self.setTopNode)
 
@@ -91,24 +100,24 @@ class UI(QtWidgets.QMainWindow):
         selectedModelVLayout.addWidget(selectedModelNodeButton)
 
         reportBoxLayout = QtWidgets.QHBoxLayout()
-        reportLabel = QtWidgets.QLabel("Report:")
+        reportLabel = QtWidgets.QLabel("报告:")
 
         reportBoxLayout.addWidget(reportLabel)
         report.addLayout(reportBoxLayout)
 
-        self.reportOutputUI.setMinimumWidth(600)
+        self.reportOutputUI.setMinimumWidth(200)
         report.addWidget(self.reportOutputUI)
 
-        self.checkRunButton = QtWidgets.QPushButton("Run All Checked")
+        self.checkRunButton = QtWidgets.QPushButton("执行所有选中项")
         self.checkRunButton.clicked.connect(self.sanityCheck)
 
         report.addWidget(self.checkRunButton)
 
-        clearButton = QtWidgets.QPushButton("Clear")
+        clearButton = QtWidgets.QPushButton("清空")
         clearButton.setMaximumWidth(150)
         clearButton.clicked.connect(partial(self.reportOutputUI.clear))
         reportBoxLayout.addWidget(clearButton)
-        self.resize(1000, 900)
+        self.resize(600, 900)
         category = self.getCategories(self.commandsList)
 
         for obj in category:
@@ -148,27 +157,27 @@ class UI(QtWidgets.QMainWindow):
             self.categoryLayout[category].addWidget(self.commandWidget[name])
             self.commandWidget[name].setLayout(self.commandLayout[name])
 
-            self.commandLayout[name].setSpacing(4)
+            self.commandLayout[name].setSpacing(0)
             self.commandLayout[name].setContentsMargins(0, 0, 0, 0)
             self.commandWidget[name].setStyleSheet(
                 "padding: 0px; margin: 0px;")
             self.command[name] = name
             self.commandLabel[name] = QtWidgets.QLabel(label)
             self.commandLabel[name].setMinimumWidth(120)
-            self.commandLabel[name].setStyleSheet("padding: 2px;")
+            self.commandLabel[name].setStyleSheet("padding: 0px;")
             self.commandCheckBox[name] = QtWidgets.QCheckBox()
 
             self.commandCheckBox[name].setChecked(check)
             self.commandCheckBox[name].setMaximumWidth(20)
 
-            self.commandRunButton[name] = QtWidgets.QPushButton("Run")
+            self.commandRunButton[name] = QtWidgets.QPushButton("执行")
             self.commandRunButton[name].setMaximumWidth(30)
 
             self.commandRunButton[name].clicked.connect(
                 partial(self.commandToRun, [obj]))
 
             self.errorNodesButton[name] = QtWidgets.QPushButton(
-                "Select Error Nodes")
+                "选择错误处")
             self.errorNodesButton[name].setEnabled(False)
             self.errorNodesButton[name].setMaximumWidth(150)
 
@@ -182,13 +191,13 @@ class UI(QtWidgets.QMainWindow):
         checkButtonsLayout = QtWidgets.QHBoxLayout()
         checks.addLayout(checkButtonsLayout)
 
-        uncheckAllButton = QtWidgets.QPushButton("Uncheck All")
+        uncheckAllButton = QtWidgets.QPushButton("全部取消")
         uncheckAllButton.clicked.connect(self.uncheckAll)
 
-        invertCheckButton = QtWidgets.QPushButton("Invert")
+        invertCheckButton = QtWidgets.QPushButton("反选")
         invertCheckButton.clicked.connect(self.invertCheck)
 
-        checkAllButton = QtWidgets.QPushButton("Check All")
+        checkAllButton = QtWidgets.QPushButton("全选")
         checkAllButton.clicked.connect(self.checkAll)
 
         checkButtonsLayout.addWidget(uncheckAllButton)
@@ -288,7 +297,7 @@ class UI(QtWidgets.QMainWindow):
                     nodes = topNode
                 nodes.append(topNode)
             else:
-                response = "Object in Top Node doesn't exists\n"
+                response = "指定顶级物体不存在\n"
                 self.reportOutputUI.clear()
                 self.reportOutputUI.insertPlainText(response)
         for node in nodes:
@@ -301,7 +310,7 @@ class UI(QtWidgets.QMainWindow):
         nodes = self.filterNodes()
         self.reportOutputUI.clear()
         if len(nodes) == 0:
-            self.reportOutputUI.insertPlainText("Error - No nodes to check\n")
+            self.reportOutputUI.insertPlainText("Error - 没有可检查的物体\n")
         else:
             for currentCommand in commands:
                 command = currentCommand['func']
@@ -310,7 +319,7 @@ class UI(QtWidgets.QMainWindow):
                     mcc, command)(nodes, self.SLMesh)
                 if self.errorNodes:
                     self.reportOutputUI.insertHtml(
-                        label + " -- <font color='#996666'>FAILED</font><br>")
+                        label + " -- <font color='#996666'>Fail</font><br>")
                     for obj in self.errorNodes:
                         self.reportOutputUI.insertPlainText(
                             "    " + obj + "\n")
@@ -324,7 +333,7 @@ class UI(QtWidgets.QMainWindow):
                     self.commandLabel[command].setStyleSheet(
                         "background-color: #446644; padding: 2px;")
                     self.reportOutputUI.insertHtml(
-                        label + " -- <font color='#669966'>SUCCESS</font><br>")
+                        label + " -- <font color='#669966'>Success</font><br>")
                     self.errorNodesButton[command].setEnabled(False)
 
     def sanityCheck(self):
@@ -339,7 +348,7 @@ class UI(QtWidgets.QMainWindow):
                     "background-color: none; padding: 2px;")
                 self.errorNodesButton[name].setEnabled(False)
         if len(checkedCommands) == 0:
-            print("You have to select something")
+            print("你需要选择物体")
         else:
             self.commandToRun(checkedCommands)
 

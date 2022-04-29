@@ -95,17 +95,56 @@ def hardEdges(list, SLMesh):
     hardEdges = []
     selIt = om.MItSelectionList(SLMesh)
     while not selIt.isDone():
-        edgeIt = om.MItMeshEdge(selIt.getDagPath())
+        node = selIt.getDependNode()
         objectName = selIt.getDagPath().getPath()
-        while not edgeIt.isDone():
-            if edgeIt.isSmooth == False and edgeIt.onBoundary() == False:
-                edgeIndex = edgeIt.index()
-                componentName = str(objectName) + '.e[' + str(edgeIndex) + ']'
-                hardEdges.append(componentName)
+        
+        # Create dictionary with face uv indexes
+        face_uv_indexes = {}
+        face_vertex_iter = om.MItMeshFaceVertex(node)
+        while not face_vertex_iter.isDone():
+            if face_vertex_iter.faceId() not in face_uv_indexes:
+                face_uv_indexes[face_vertex_iter.faceId()] = {face_vertex_iter.getUVIndex()}
             else:
-                pass
-            edgeIt.next()
+                face_uv_indexes[face_vertex_iter.faceId()].add(face_vertex_iter.getUVIndex())
+                
+            face_vertex_iter.next()
+        
+        # Iterate through all edges and set inner UV shell edges soft and other edges hard
+        edge_iter = om.MItMeshEdge(node)
+        while not edge_iter.isDone():
+            faces = edge_iter.getConnectedFaces()[:]                
+            
+            if len(faces) == 2:            
+                if len(face_uv_indexes[faces[0]].intersection(face_uv_indexes[faces[1]])) > 1 :
+                    # Is inner UV shell edge, so set soft
+                    if not edge_iter.isSmooth:
+                        edgeIndex = edge_iter.index()
+                        componentName = str(objectName) + '.e[' + str(edgeIndex) + ']'
+                        hardEdges.append(componentName)
+                else:
+                    # Is UV shell edge, so set hard
+                    if edge_iter.isSmooth:
+                        edgeIndex = edge_iter.index()
+                        componentName = str(objectName) + '.e[' + str(edgeIndex) + ']'
+                        hardEdges.append(componentName)
+                
+            edge_iter.next()
+            
+
         selIt.next()
+    # selIt = om.MItSelectionList(SLMesh)
+    # while not selIt.isDone():
+        # edgeIt = om.MItMeshEdge(selIt.getDagPath())
+        # objectName = selIt.getDagPath().getPath()
+        # while not edgeIt.isDone():
+            # if edgeIt.isSmooth == False and edgeIt.onBoundary() == False:
+                # edgeIndex = edgeIt.index()
+                # componentName = str(objectName) + '.e[' + str(edgeIndex) + ']'
+                # hardEdges.append(componentName)
+            # else:
+                # pass
+            # edgeIt.next()
+        # selIt.next()
     return hardEdges
 
 
@@ -139,7 +178,7 @@ def zeroAreaFaces(list, SLMesh):
         objectName = selIt.getDagPath().getPath()
         while not faceIt.isDone():
             faceArea = faceIt.getArea()
-            if faceArea == 0.00000001:
+            if faceArea <= 0.00000001:
                 faceIndex = faceIt.index()
                 componentName = str(objectName) + '.f[' + str(faceIndex) + ']'
                 zeroAreaFaces.append(componentName)
