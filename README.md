@@ -6,7 +6,7 @@ modelChecker is a python plug-in written for Autodesk Maya to sanity check digit
 
 ## Setup
 
-Download the [modelChecker.zip](https://github.com/JakobJK/modelChecker/archive/main.zip) and move the modelChecker folder in your Maya scripts directory and create a python shell button with the following code:
+Download the [modelChecker.zip](https://github.com/ypypjay/modelChecker/archive/main.zip) and move the modelChecker folder in your Maya scripts directory and create a python shell button with the following code:
 
 ```python
 from modelChecker import modelChecker_UI
@@ -26,12 +26,13 @@ There are three ways to run the checks.
 
 - [**Jakob Kousholt**](https://www.linkedin.com/in/jakobjk/) - Software Engineer / Freelance Creature Modeler
 - [**Niels Peter Kaagaard**](https://www.linkedin.com/in/niels-peter-kaagaard-146b8a13) - Senior Modeler at Weta Digital
+- [**岳鹏**](https://www.linkedin.com/in/%E5%B2%B3-%E9%B9%8F-8b31138b/) - Technical Artist
 
 ## Support & Feedback
 
-For any bugs, errors, and requests feel free to reach out to [Jake](mailto:jakobjk@gmail.com)
+For any bugs, errors, and requests feel free to reach out to [秋山](mailto:ypypjay@gmail.com)
 
-If you want to support us, feel free to "buy" the modelChecker from [Gumroad](https://jakejk.gumroad.com/l/htZYj).
+If you want to support original author, feel free to "buy" the modelChecker from [Gumroad](https://jakejk.gumroad.com/l/htZYj).
 
 ## License
 
